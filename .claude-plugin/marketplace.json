@@ -1,0 +1,16 @@
+{
+  "name": "armsom",
+  "owner": {
+    "name": "Spencer Vaughn"
+  },
+  "metadata": {
+    "description": "ArmSoM hardware reference plugins."
+  },
+  "plugins": [
+    {
+      "name": "armsom",
+      "source": "./",
+      "description": "ArmSoM CM1 + CM1-IO hardware reference skills (cm1, cm1-io)."
+    }
+  ]
+}

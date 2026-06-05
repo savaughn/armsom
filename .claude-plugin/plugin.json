@@ -1,0 +1,21 @@
+{
+  "name": "armsom",
+  "version": "1.0.0",
+  "description": "ArmSoM CM1 (RK3506J) module and CM1-IO carrier hardware reference. Bundles two skills (cm1, cm1-io) with pre-extracted schematic data: board-to-board connector pinouts, power trees, SoC voltage domains, per-peripheral net maps, and the CM1-IO 40-pin GPIO/FlexBUS header with Linux gpio numbers.",
+  "author": {
+    "name": "Spencer Vaughn"
+  },
+  "keywords": [
+    "armsom",
+    "cm1",
+    "cm1-io",
+    "rk3506",
+    "rockchip",
+    "hardware",
+    "schematic",
+    "pinout",
+    "gpio",
+    "flexbus",
+    "kicad"
+  ]
+}
