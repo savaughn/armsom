@@ -54,6 +54,13 @@ image for the complete alternate list per pin.
 > transcribed here. The two bottom-right cells (pins 38, 40) are marked for
 > verification against the image.
 
+> **FB0 ≡ FB1.** Note that many pins list **both** a `FLEXBUS0_*` and a
+> `FLEXBUS1_*` alternate (e.g. pin 13 `FLEXBUS0_D7`, pin 21 `FLEXBUS0_CSN_M3`,
+> pin 22 `FLEXBUS1_CSN_M3`). ArmSoM confirms FlexBUS0 and FlexBUS1 are
+> functionally identical fabrics; the controller is a pinmux choice, not a
+> hardware constraint. Don't treat a `FLEXBUS1_*` label as "FB1 only" — these
+> same pads run equally well as **FlexBUS0**.
+
 ## Highlights for bring-up
 
 - **Linux console**: UART0 on **pin 8 (TX, gpio22)** / **pin 10 (RX, gpio23)**.

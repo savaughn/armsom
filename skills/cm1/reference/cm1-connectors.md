@@ -80,10 +80,19 @@ WIFI_REG_ON, and the RTC backup-battery tap.
 | 41 | SAI1_LRCK | [4] | 42 | SAI1_SCLK | [4] |
 | 43 | SAI1_MCLK | [4] | 44 | **GND** | |
 
-**FlexBUS1 lane group** (the SoC's FlexBUS1 external-bus data/clock fabric):
+**FlexBUS1 lane group** (the SoC's FlexBUS external-bus data/clock fabric):
 D0–D15 on pins 1–16 (interleaved odd/even),
 **FLEXBUS1_CLK on pin 17**. Each `FLEXBUS1_Dn` shares its pad with a DSMC,
 CAN1, or UART4 function — selected by pinmux.
+
+> **FB0 ≡ FB1 — don't read the `FLEXBUS1_*` labels too literally.** ArmSoM
+> confirms FlexBUS0 and FlexBUS1 are **functionally identical** lane fabrics.
+> These pads are silked `FLEXBUS1_*` only because the schematic uses the
+> **highest mux-label** for each pad; the *same* pads also expose `FLEXBUS0_*`
+> functions via pinmux (clearly visible in the CM1-IO J4 mux table, where the
+> identical pins carry both `FLEXBUS0_*` and `FLEXBUS1_*` alternates). A
+> `FLEXBUS1_*` net name is **not** a reason to avoid driving these pins as
+> **FlexBUS0** — choose either controller in the device tree.
 
 > **Rev V1.1 change (sheet 17):** J8002 **pin 37 was reassigned to VBAT_RTC**
 > (was something else in V1.0). It is the RTC backup-battery input. Also in
