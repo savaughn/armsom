@@ -23,7 +23,7 @@ Carrier-side this is the **40-pin user header**: UART2/3, I2C2, RMII0+RMII1
 | Pin | Net (SoC default) | xref | Pin | Net (SoC default) | xref |
 |----:|-------------------|:----:|----:|-------------------|:----:|
 | 1 | — (unlabeled) | | 2 | **VCC_3V3** | |
-| 3 | UART3_TX | [4] | 4 | — (unlabeled) | |
+| 3 | UART3_TX | [4] | 4 | **VCC_3V3** | |
 | 5 | UART3_RX | [4] | 6 | **VCC_1V8** | |
 | 7 | I2C2_SCL | [4,13,14] | 8 | I2C2_SDA | [4,13,14] |
 | 9 | UART2_TX | [4] | 10 | UART2_RX/PWM0_CH3_IR_RX | [4] |
@@ -39,12 +39,14 @@ Carrier-side this is the **40-pin user header**: UART2/3, I2C2, RMII0+RMII1
 | 29 | ADC2/HOST_WAKE_BT_H | [7] | 30 | RUN_LED/ADC3 (via R9007 0Ω) | [7,16] |
 | 31 | ACODEC_ADC_INP | [7] | 32 | ACODEC_ADC_INN | [7] |
 | 33 | USB20_OTG1_DM | [7] | 34 | **VCC5V0_SYS** | |
-| 35 | USB20_OTG1_DP | [7] | 36 | — (unlabeled) | |
-| 37 | — (unlabeled) | | 38 | — (unlabeled) | |
+| 35 | USB20_OTG1_DP | [7] | 36 | **VCC5V0_SYS** | |
+| 37 | — (unlabeled) | | 38 | **VCC5V0_SYS** | |
 | 39 | — (unlabeled, near GND) | | 40 | **VCC12V_DCIN** | |
 
-Power on this connector: **VCC_3V3** (pin 2), **VCC_1V8** (pin 6),
-**VCC5V0_SYS** (pin 34), **VCC12V_DCIN** (pin 40, 12 V barrel/adapter in).
+Power on this connector: **VCC_3V3** (pins **2 / 4**, tied), **VCC_1V8** (pin 6),
+**VCC5V0_SYS** (pins **34 / 36 / 38**, all three tied — schematic sheet 16
+shows a common net, so the 5 V rail has three parallel pins for current
+capacity), **VCC12V_DCIN** (pin 40, 12 V barrel/adapter in).
 
 ---
 
@@ -83,16 +85,72 @@ WIFI_REG_ON, and the RTC backup-battery tap.
 **FlexBUS1 lane group** (the SoC's FlexBUS external-bus data/clock fabric):
 D0–D15 on pins 1–16 (interleaved odd/even),
 **FLEXBUS1_CLK on pin 17**. Each `FLEXBUS1_Dn` shares its pad with a DSMC,
-CAN1, or UART4 function — selected by pinmux.
+CAN1, or UART4 function — selected by pinmux. **`flexbus1_data` is RECEIVE-ONLY
+and these are NOT interchangeable with FlexBUS0 — read the ⚠ note below before
+wiring any FlexBUS master (e.g. a QSPI NOR flash) to these pins.**
 
-> **FB0 ≡ FB1 — don't read the `FLEXBUS1_*` labels too literally.** ArmSoM
-> confirms FlexBUS0 and FlexBUS1 are **functionally identical** lane fabrics.
-> These pads are silked `FLEXBUS1_*` only because the schematic uses the
-> **highest mux-label** for each pad; the *same* pads also expose `FLEXBUS0_*`
-> functions via pinmux (clearly visible in the CM1-IO J4 mux table, where the
-> identical pins carry both `FLEXBUS0_*` and `FLEXBUS1_*` alternates). A
-> `FLEXBUS1_*` net name is **not** a reason to avoid driving these pins as
-> **FlexBUS0** — choose either controller in the device tree.
+> **⚠ FB0 ≠ FB1 on these pads — `flexbus1_data` is INPUT-ONLY.** An earlier
+> version of this note claimed FB0/FB1 are interchangeable and you can drive
+> these pins as either controller. **That is wrong and cost a long hardware
+> debug (2026-06-15).** Two facts from the SoC, both confirmed on hardware:
+>
+> 1. **`flexbus1_data` is receive-only.** RK3506 TRM Part 1 §37.1 (p.906):
+>    *"The direction of flexbus0_data port is I/O … The direction of
+>    flexbus1_data port is **Input**, flexbus1_data port can only be used for
+>    receiving operation."* A FlexBUS **master** (SPI/FSPI, e.g. reading a QSPI
+>    NOR) **cannot transmit** the command/address on `flexbus1_data` pins.
+> 2. **The A-bank has NO `FLEXBUS0_*` alternate.** `GPIO1_A0..A7` mux to
+>    `FLEXBUS1_D0..D7` *only*. The bidirectional `FLEXBUS0_D*` functions live on
+>    the **B/C/D-bank** pads (below). So the J8002 pins silked `FLEXBUS1_D0..D3`
+>    (pins 1–4, = `GPIO1_A0..A3`) **cannot** be re-muxed to FlexBUS0 output.
+>
+> ArmSoM's "functionally identical" was about CLK + the **slave-driven read**
+> path (the slave drives `D0..D3`, the controller receives) — which agrees with
+> the TRM, not with "drive A-bank pins as a FB0 master." Proof: a known-good
+> Winbond W25Q128JV wired to `GPIO1_A0..A3` read JEDEC `00 00 00 00` for every
+> `FLEXBUS_REMAP`/CS/clock combination; the same NOR works once rewired to the
+> `FLEXBUS0_D*` C-bank pads.
+>
+> **To run a FlexBUS0 SPI/QSPI master (e.g. a NOR flash), the flash's data must
+> be on bidirectional `FLEXBUS0_D*` pads** (`device_property … flexbus0-opmode =
+> SPI`), with `FLEXBUS0_CLK` = `GPIO1_C1` (J8002.18) and a `FLEXBUS0_CSN_*`
+> (e.g. `flexbus0_csn_m0` = `GPIO1_B0` = J8002.9). If the flash sits on a data
+> group other than `FLEXBUS0_D0..D3`, program `FLEXBUS_REMAP` (0x010) to point
+> the controller's lanes at it — the stock `flexbus-fspi` driver leaves it 0.
+>
+> **`FLEXBUS0_D*` pad map** (mux 3; bidirectional I/O):
+>
+> | FB0 data | SoC pad | J8002 | | FB0 data | SoC pad | J8002 |
+> |---|---|---|---|---|---|---|
+> | D0 | GPIO1_D3 | 28 | | D8  | GPIO1_C3 | 20 |
+> | D1 | GPIO1_D2 | 27 | | D9  | GPIO1_C2 | —  |
+> | D2 | GPIO1_D1 | 26 (backlight) | | D10 | GPIO1_B7 | 16 |
+> | D3 | GPIO1_D0 | — | | D11 | GPIO1_B6 | 15 |
+> | D4 | GPIO1_C7 | 24 | | D12 | GPIO1_B5 | 14 |
+> | D5 | GPIO1_C6 | 23 | | D13 | GPIO1_B4 | 13 |
+> | D6 | GPIO1_C5 | 22 | | D14 | GPIO1_B3 | 12 |
+> | D7 | GPIO1_C4 | 21 | | D15 | GPIO1_B2 | 11 |
+>
+> Only the **B-bank** `FLEXBUS0_D10..D15` pins (J8002.11–16) double as
+> `FLEXBUS1_D10..D15`; the A-bank does not.
+>
+> **Command-phase gotcha (RK3506 silicon, hardware-confirmed).** The FSPI
+> command/address phase *always* exits on `flexbus0_d0` = `Dout[0]` =
+> **GPIO1_D3 (J8002.28)**. `tx_data_remap` (low nibble of `FLEXBUS_REMAP`)
+> relocates only the TX *data* phase, **not** the command — so a `0x14`
+> (tx_remap=4) that tries to push the command onto the D4–D7 group is heard by
+> nothing and JEDEC reads `00`. The flash's IO0/SI must therefore reach
+> **GPIO1_D3** for the command; for quad, fan flash IO0 to **both** GPIO1_D3
+> (command, `Dout[0]`) **and** its quad data lane.
+>
+> **Worked quad-NOR pin recipe on this module** (one validated combination):
+> flash IO0 to both **GPIO1_D3** (J8002.28, command) and **GPIO1_C7** (J8002.24,
+> quad data lane); quad read window `Din[7:4]` = GPIO1_C7/C6/C5/C4
+> (J8002.24/23/22/21); `FLEXBUS0_CLK` = GPIO1_C1 (J8002.18); CS =
+> `flexbus0_csn_m0` = GPIO1_B0 (J8002.9, mux 5); **`FLEXBUS_REMAP = 0x10`**
+> (tx_remap=0 → command on `Dout[0]`=D3, rx_remap=1 → quad window
+> `Din[7:4]`=C7..C4). The native `D0–D3` group is impossible on this module —
+> GPIO1_D0 (`FLEXBUS0_D3`) is not pinned out on either connector.
 
 > **Rev V1.1 change (sheet 17):** J8002 **pin 37 was reassigned to VBAT_RTC**
 > (was something else in V1.0). It is the RTC backup-battery input. Also in

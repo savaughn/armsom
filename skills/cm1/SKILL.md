@@ -42,6 +42,13 @@ fall back to rendering the PDF with `scripts/extract_schematic.py`.
   label (e.g. `DSMC_D5/FLEXBUS1_D8`, `UART2_RX/PWM0_CH3_IR_RX`). The actual
   function depends on the RK3506 pinmux in the device tree — the silk/net name
   is not proof of how the pin is currently driven.
+- **⚠ FlexBUS0 ≠ FlexBUS1 — `flexbus1_data` is INPUT-only, and the A-bank pins
+  (`GPIO1_A0..A7` = `FLEXBUS1_D0..D7`) have NO `FLEXBUS0_*` alternate.** Do not
+  assume the `FLEXBUS1_*` pins can be driven as a FlexBUS0 master (the silked
+  J8002 "QSPI data" pins 1–4 cannot). A FlexBUS master (QSPI NOR, etc.) needs
+  its data on the bidirectional `FLEXBUS0_D*` pads (B/C/D-bank). Full details +
+  pad map + the on-hardware proof are in
+  [reference/cm1-connectors.md](reference/cm1-connectors.md) (FlexBUS note).
 - The `[n]` tag after a net is the **schematic sheet cross-reference** (the other
   sheet the net appears on), not a pin number.
 - The CM1-IO carrier re-exposes most of these nets on its 40-pin and 44-pin
