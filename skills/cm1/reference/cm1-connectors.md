@@ -8,11 +8,6 @@ where that net originates.
 
 Pin numbering: odd pins (1,3,5…) in the left column, even pins (2,4,6…) in the
 right column — standard 2-row DIP order.
-
-Unlabeled pins are shown as `— (unlabeled)`: on the schematic these tie to GND
-or are NC. **Verify GND/NC pins against the PCB or CM1-IO mating schematic
-before relying on them.**
-
 ---
 
 ## J8001 — `DIP_2D54_2X20P`, 40-pin (2×20, 2.54 mm)
@@ -22,7 +17,7 @@ Carrier-side this is the **40-pin user header**: UART2/3, I2C2, RMII0+RMII1
 
 | Pin | Net (SoC default) | xref | Pin | Net (SoC default) | xref |
 |----:|-------------------|:----:|----:|-------------------|:----:|
-| 1 | — (unlabeled) | | 2 | **VCC_3V3** | |
+| 1 | **GND** | | 2 | **VCC_3V3** | |
 | 3 | UART3_TX | [4] | 4 | **VCC_3V3** | |
 | 5 | UART3_RX | [4] | 6 | **VCC_1V8** | |
 | 7 | I2C2_SCL | [4,13,14] | 8 | I2C2_SDA | [4,13,14] |
@@ -40,13 +35,14 @@ Carrier-side this is the **40-pin user header**: UART2/3, I2C2, RMII0+RMII1
 | 31 | ACODEC_ADC_INP | [7] | 32 | ACODEC_ADC_INN | [7] |
 | 33 | USB20_OTG1_DM | [7] | 34 | **VCC5V0_SYS** | |
 | 35 | USB20_OTG1_DP | [7] | 36 | **VCC5V0_SYS** | |
-| 37 | — (unlabeled) | | 38 | **VCC5V0_SYS** | |
-| 39 | — (unlabeled, near GND) | | 40 | **VCC12V_DCIN** | |
+| 37 | **GND** | | 38 | **VCC5V0_SYS** | |
+| 39 | **GND** | | 40 | **VCC12V_DCIN** | |
 
 Power on this connector: **VCC_3V3** (pins **2 / 4**, tied), **VCC_1V8** (pin 6),
 **VCC5V0_SYS** (pins **34 / 36 / 38**, all three tied — schematic sheet 16
 shows a common net, so the 5 V rail has three parallel pins for current
-capacity), **VCC12V_DCIN** (pin 40, 12 V barrel/adapter in).
+capacity), **VCC12V_DCIN** (pin 40, 12 V barrel/adapter in). **GND** on pins
+**1 / 37 / 39**.
 
 ---
 
@@ -73,7 +69,7 @@ WIFI_REG_ON, and the RTC backup-battery tap.
 | 23 | SPK_CTRL | [8] | 24 | RMII1_RSTn | [8] |
 | 25 | USB20_OTG1_DRV_H | [8] | 26 | UART4_RTSN | [8] |
 | 27 | UART4_RX | [8] | 28 | UART4_TX | [8] |
-| 29 | PHONE_DET_L_1V8 | [4] | 30 | — (unlabeled) | |
+| 29 | PHONE_DET_L_1V8 | [4] | 30 | **GND** | |
 | 31 | UART0_TX/JTAG_TCK_M1 | [4] | 32 | UART0_RX/JTAG_TMS_M1 | [4] |
 | 33 | CAN0_RX | [4] | 34 | CAN0_TX | [4] |
 | 35 | RMII0_RSTn | [4] | 36 | I2C1_SDA | [4] |
@@ -89,10 +85,7 @@ CAN1, or UART4 function — selected by pinmux. **`flexbus1_data` is RECEIVE-ONL
 and these are NOT interchangeable with FlexBUS0 — read the ⚠ note below before
 wiring any FlexBUS master (e.g. a QSPI NOR flash) to these pins.**
 
-> **⚠ FB0 ≠ FB1 on these pads — `flexbus1_data` is INPUT-ONLY.** An earlier
-> version of this note claimed FB0/FB1 are interchangeable and you can drive
-> these pins as either controller. **That is wrong and cost a long hardware
-> debug (2026-06-15).** Two facts from the SoC, both confirmed on hardware:
+> **⚠ FB0 ≠ FB1 on these pads — `flexbus1_data` is INPUT-ONLY.** Two facts from the SoC, both confirmed on hardware:
 >
 > 1. **`flexbus1_data` is receive-only.** RK3506 TRM Part 1 §37.1 (p.906):
 >    *"The direction of flexbus0_data port is I/O … The direction of
@@ -111,7 +104,7 @@ wiring any FlexBUS master (e.g. a QSPI NOR flash) to these pins.**
 > `FLEXBUS_REMAP`/CS/clock combination; the same NOR works once rewired to the
 > `FLEXBUS0_D*` C-bank pads.
 >
-> **To run a FlexBUS0 SPI/QSPI master (e.g. a NOR flash), the flash's data must
+> **To run a FlexBUS0 SPI/QSPI master, the flash's data must
 > be on bidirectional `FLEXBUS0_D*` pads** (`device_property … flexbus0-opmode =
 > SPI`), with `FLEXBUS0_CLK` = `GPIO1_C1` (J8002.18) and a `FLEXBUS0_CSN_*`
 > (e.g. `flexbus0_csn_m0` = `GPIO1_B0` = J8002.9). If the flash sits on a data
@@ -124,7 +117,7 @@ wiring any FlexBUS master (e.g. a QSPI NOR flash) to these pins.**
 > |---|---|---|---|---|---|---|
 > | D0 | GPIO1_D3 | 28 | | D8  | GPIO1_C3 | 20 |
 > | D1 | GPIO1_D2 | 27 | | D9  | GPIO1_C2 | —  |
-> | D2 | GPIO1_D1 | 26 (backlight) | | D10 | GPIO1_B7 | 16 |
+> | D2 | GPIO1_D1 | 26 | | D10 | GPIO1_B7 | 16 |
 > | D3 | GPIO1_D0 | — | | D11 | GPIO1_B6 | 15 |
 > | D4 | GPIO1_C7 | 24 | | D12 | GPIO1_B5 | 14 |
 > | D5 | GPIO1_C6 | 23 | | D13 | GPIO1_B4 | 13 |
